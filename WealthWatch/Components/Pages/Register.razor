@@ -1,0 +1,189 @@
+﻿@page "/signup"
+@using WealthWatch.Components.Layout
+@layout NoNav
+@using WealthWatch.Services
+@inject UserService userService
+
+@using WealthWatch.Models
+<h3>Register</h3>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up Form</title>
+    <style>
+        body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgb(39, 39, 42);
+        }
+
+        .card {
+        background-color: white;
+        width: 400px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        padding: 24px;
+        }
+
+        .card-title {
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+        }
+
+        .form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        }
+
+        .input, .select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid rgb(229, 231, 235);
+        border-radius: 6px;
+        font-size: 0.875rem;
+        outline: none;
+        transition: border-color 0.2s;
+        background-color: white;
+        }
+
+        .input:focus, .select:focus {
+        border-color: rgb(39, 39, 42);
+        }
+
+        .select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 16px;
+        padding-right: 40px;
+        }
+
+        .button {
+        width: 100%;
+        padding: 8px;
+        background-color: rgb(0, 0, 0);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        }
+
+        .button:hover {
+        background-color: rgb(39, 39, 42);
+        }
+
+        .button:disabled {
+        background-color: rgb(169, 169, 169);
+        cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 class="card-title">Sign Up</h2>
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @ErrorMessage
+            </div>
+        }
+        <form class="form" id="registrationForm">
+            <input type="text" id="fullName" class="input" @bind="FullName" placeholder="Full Name" required />
+            <input type="email" id="email" class="input" @bind="Email" placeholder="Email" required />
+            <input type="password" id="password" class="input" @bind="Password" placeholder="Password" required />
+            <input type="password" id="confirmPassword" class="input" @bind="Confirm_password" placeholder="Confirm Password" required />
+            <select id="currency" class="select" @bind="Currency" required>
+                <option value="" disabled selected>Currency Type</option>
+                <option value="usd">USD</option>
+                <option value="eur">EUR</option>
+                <option value="gbp">GBP</option>
+                <option value="jpy">JPY</option>
+            </select>
+            <button type="submit" id="submitButton" @onclick="handleRegistration" class="button" disabled>Sign Up</button>
+        </form>
+        <div class="signup-link">
+            Have an account? <a href="/login">Login </a>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('registrationForm');
+        const submitButton = document.getElementById('submitButton');
+        const inputs = form.querySelectorAll('input, select');
+
+        function checkFormValidity() {
+        let allFieldsFilled = true;
+        inputs.forEach(input => {
+        if (!input.value) {
+        allFieldsFilled = false;
+        }
+        });
+        submitButton.disabled = !allFieldsFilled;
+        }
+
+        inputs.forEach(input => {
+        input.addEventListener('input', checkFormValidity);
+        });
+
+        // Initial check to ensure the button is correctly disabled/enabled on load
+        checkFormValidity();
+    </script>
+</body>
+</html>
+
+@code {
+
+    private string FullName;
+    private string Email;
+    private String Password;
+    private String Currency;
+    private string Confirm_password;
+    private String ErrorMessage;
+
+    private async Task handleRegistration()
+    {
+        if (!Password.Equals(Confirm_password))
+        {
+            ErrorMessage = "Password does not match! Try again.";
+            StateHasChanged();
+            await Task.Delay(3000); // Wait for 3 seconds
+            ErrorMessage = null;   // Clear the error message after delay
+            StateHasChanged();
+            return;
+        }
+
+        var user = new Users
+            {
+                FullName = FullName,
+                Email = Email,
+                Password = Password,
+                Currency = Currency
+            };
+
+        bool result = userService.CreateUser(user);
+        if (result)
+        {
+            Console.WriteLine("User created!!");
+        }
+        else
+        {
+            ErrorMessage = "Registration failed! Please try again.";
+            StateHasChanged();
+            await Task.Delay(3000); // Wait for 3 seconds
+            ErrorMessage = null;   // Clear the error message after delay
+            StateHasChanged();
+        }
+    }
+
+}

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using WealthWatch.Services;
 
 namespace WealthWatch
 {
@@ -15,6 +16,7 @@ namespace WealthWatch
                 });
 
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddSingleton<UserService>();
 
 #if DEBUG
     		builder.Services.AddBlazorWebViewDeveloperTools();
