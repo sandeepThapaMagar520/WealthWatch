@@ -1,27 +1,28 @@
-﻿@page "/debt"
+﻿@page "/expense"
 @using WealthWatch.Models
 @using WealthWatch.Services
 @inject TransactionService transactionService
 @inject SessionService session
 @inject UserService userService
+@inject TagService tag
 
-<div class="debt-body">
+<div class="income-body">
     <header class="header">
         <div class="user-info">
             <div class="user-avatar"></div>
             <span>@currentUser</span>
         </div>
         <div class="balance">
-            Total Debit: <strong>@TotalDebtAmount</strong>
+            Total Income: <strong>@TotalExpenseAmount</strong>
         </div>
     </header>
 
     <main class="main-content">
-        <div class="debts-container">
-            <div class="debts-header">
-                <h1>Debts</h1>
+        <div class="income-container">
+            <div class="income-header">
+                <h1>Expense</h1>
             </div>
-            <div class="debt-filter-div">
+            <div class="income-filter-div">
                 <div class="date-filter">
                     <label for="start-date">Start Date</label>
                     <input type="date" id="start-date" name="start-date" @bind=FromDate />
@@ -29,44 +30,38 @@
                     <label for="end-date">End Date</label>
                     <input type="date" id="end-date" name="end-date" @bind=ToDate />
                 </div>
-                <div class="div-add-debt-btn">
-                    <button class="add-debt-btn">Add Debt</button>
+                <div class="div-add-income-btn">
+                    <button class="add-income-btn">Add Expense</button>
                 </div>
             </div>
 
-            <table class="debts-table">
+            <table class="income-table">
                 <thead>
                     <tr>
-                        <th>Source</th>
-                        <th>Debt Date</th>
+                        <th>Description</th>
+                        <th>Date</th>
                         <th>Amount</th>
-                        <th>Due Date</th>
-                        <th>Action</th>
-                        <th>Status</th>
+                        <th>Tag</th>
+                        <th>Note</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var transaction in FilteredTransactions)
                     {
                         <tr>
-                            <td>@transaction.Source</td>
+                            <td>@transaction.Description</td>
                             <td><span class="date">@transaction.Date</span></td>
                             <td>@transaction.Amount </td>
-                            <td>@transaction.DueDate?.ToString("MMMM dd, yyyy")</td>
-                            <td><button class="pay-btn">Pay</button></td>
-                            <td>
-                                <span class="status @(transaction.Status == "Completed" ? "completed" : "incomplete")">
-                                    @transaction.Status
-                                </span>
-                            </td>
+                            <td>@transaction.Tag</td>
+                            <td>@transaction.Note</td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
 
-        <form class="add-debt-form">
-            <h2 class="form-title">Add Debt</h2>
+        <form class="add-income-form">
+            <h2 class="form-title">Add Expense</h2>
             @if (!string.IsNullOrEmpty(ErrorMessage))
             {
                 <div class="alert alert-danger" role="alert">@ErrorMessage</div>
@@ -76,23 +71,33 @@
                 <div class="alert alert-success" role="alert">@SuccessMessage</div>
             }
             <div class="form-group">
-                <label for="description">Source</label>
-                <input type="text" @bind=newtransactions.Source id="description" name="description" required />
+                <label for="description">Description</label>
+                <input type="text" @bind=newtransactions.Description id="description" name="description" required />
             </div>
             <div class="form-group">
-                <label for="debtDate">Debt Date</label>
-                <input type="date" @bind=newtransactions.Date id="debtDate" name="debtDate" required />
+                <label for="incomeDate">Date</label>
+                <input type="date" @bind=newtransactions.Date id="incomeDate" name="incomeDate" required />
             </div>
             <div class="form-group">
                 <label for="amount">Amount</label>
                 <input type="number" @bind=newtransactions.Amount id="amount" name="amount" required />
             </div>
             <div class="form-group">
-                <label for="dueDate">Due Date</label>
-                <input type="date" @bind=newtransactions.DueDate id="dueDate" name="dueDate" required />
+                <label for="tags">Tags</label>
+                <select @bind="newtransactions.Tag" id="tags" name="tags" required>
+                    <option value="">Select a Tag</option>
+                    @foreach (var tag in allTags)
+                    {
+                        <option value="@tag.TagName">@tag.TagName</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="note">Note</label>
+                <input type="text" @bind=newtransactions.Note id="note" name="note" />
             </div>
             <input type="hidden" @bind=newtransactions.Type />
-            <button type="submit" class="submit-btn" @onclick="HandleSubmit">ADD DEBT</button>
+            <button type="submit" class="submit-btn" @onclick="HandleSubmit">ADD Expense</button>
         </form>
     </main>
 </div>
@@ -104,7 +109,10 @@
     private string ErrorMessage;
     private Transactions newtransactions = new Transactions();
     private List<Transactions> listOfTransactions = new List<Transactions>();
-    private int TotalDebtAmount;
+    private int TotalExpenseAmount;
+
+    //for displaying tags
+    private List<Tags> allTags = new List<Tags>();
 
     private DateTime? FromDate;
     private DateTime? ToDate;
@@ -112,13 +120,12 @@
     // Filter data based on the FromDate and ToDate
     private IEnumerable<Transactions> FilteredTransactions => listOfTransactions
     .Where(t =>
-        (!FromDate.HasValue || t.DueDate.HasValue && t.DueDate.Value.Date >= FromDate.Value.Date) &&
-        (!ToDate.HasValue || t.DueDate.HasValue && t.DueDate.Value.Date <= ToDate.Value.Date))
-    .OrderBy(t => t.DueDate); // Sort by DueDate
+        (!FromDate.HasValue || t.Date.Date >= FromDate.Value.Date) &&
+        (!ToDate.HasValue || t.Date.Date <= ToDate.Value.Date));
 
     protected override async Task OnInitializedAsync()
     {
-        newtransactions.Type = "debt";
+        newtransactions.Type = "expense";
 
         var checkuserId = session.GetCurrentUserId();
         if (checkuserId == null || checkuserId == Guid.Empty)
@@ -131,14 +138,17 @@
         currentUser = await userService.GetNameByIdAsync(checkuserId.Value);
         userId = checkuserId.Value;
 
-        TotalDebtAmount = await transactionService.GetAmountByTypeAsync(userId, "debt");
+        TotalExpenseAmount = await transactionService.GetAmountByTypeAsync(userId, "expense");
 
-        await LoadDebts();
+        //load tags
+        allTags = await tag.GetAllTagsAsync();
+
+        await LoadIncome();
     }
 
-    private async Task LoadDebts()
+    private async Task LoadIncome()
     {
-        listOfTransactions = await transactionService.GetTransactionsByTypeAsync(userId, "debt");
+        listOfTransactions = await transactionService.GetTransactionsByTypeAsync(userId, "expense");
     }
 
     private async Task HandleSubmit()
@@ -147,17 +157,9 @@
         SuccessMessage = null;
 
         // Validation for Source
-        if (string.IsNullOrWhiteSpace(newtransactions.Source))
+        if (string.IsNullOrWhiteSpace(newtransactions.Description))
         {
-            ErrorMessage = "Source is required.";
-            await DisplayMessageWithDelay();
-            return;
-        }
-
-        // Validation for Debt Date
-        if (!newtransactions.DueDate.HasValue || newtransactions.DueDate.Value < (DateTime.Today))
-        {
-            ErrorMessage = "Invalid due date! ";
+            ErrorMessage = "Description is required.";
             await DisplayMessageWithDelay();
             return;
         }
@@ -166,6 +168,12 @@
         if (string.IsNullOrWhiteSpace(newtransactions.Amount) || !decimal.TryParse(newtransactions.Amount, out decimal amount) || amount <= 0)
         {
             ErrorMessage = "Valid amount is required.";
+            await DisplayMessageWithDelay();
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(newtransactions.Tag))
+        {
+            ErrorMessage = "Tag is required.";
             await DisplayMessageWithDelay();
             return;
         }
