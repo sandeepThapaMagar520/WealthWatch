@@ -1,19 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace WealthWatch.Models
 {
     public class Users
     {
         public Guid Id { get; set; } = Guid.NewGuid();
-        public String FullName { get; set; }
-        public String Email { get; set; }
-        public String Password { get; set; }
 
-        public String Currency {  get; set; }
+        [Required(ErrorMessage = "Full Name is required.")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "Invalid email address.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Password is required.")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Currency selection is required.")]
+        public string Currency { get; set; } = string.Empty;
+        
     }
 }

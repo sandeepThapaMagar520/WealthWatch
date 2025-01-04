@@ -1,6 +1,11 @@
-﻿@page "/login"
+﻿@page "/"
 @using WealthWatch.Components.Layout
 @layout NoNav
+@using WealthWatch.Services
+@using WealthWatch.Models
+@inject UserService Service
+@inject SessionService SessionService
+@inject NavigationManager NavigationManager;
 
 <!DOCTYPE html>
 <html lang="en">
@@ -8,140 +13,102 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <style>
-        .login-container {
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: black;
-        }
-
-        .login-box {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-            margin: 0 1rem;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 2rem;
-            font-size: 2rem;
-            font-weight: bold;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 1rem;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-
-        .login-button {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: grey;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            margin-bottom: 1rem;
-        }
-
-            .login-button:hover {
-                background-color: black;
-            }
-
-            .login-button:disabled {
-                background-color: rgb(169, 169, 169);
-                cursor: not-allowed;
-            }
-
-        .signup-link {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-            .signup-link a {
-                color: white;
-                text-decoration: none;
-                font-weight: 500;
-            }
-
-                .signup-link a:hover {
-                    text-decoration: underline;
-                }
-    </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-box">
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                    <div class="alert alert-danger" role="alert">
+                    @ErrorMessage
+                    </div>
+            }
+            @if (!string.IsNullOrEmpty(SuccessMessage))
+            {
+                    <div class="alert alert-success" role="alert">
+                    @SuccessMessage
+                    </div>
+            }
             <h1>Login</h1>
 
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" class="form-control" />
+                <label for="Email">Email</label>
+                <input type="text" @bind="Email" class="form-control" />
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" class="form-control" />
+                <input type="password" @bind="Password" class="form-control" />
             </div>
 
-            <button class="login-button" id="loginButton" disabled>Log In</button>
+            <button class="login-button" id="loginButton" @onclick="handleLogin">Log In</button>
 
             <div class="signup-link">
-                Don't have an account? <a href="/signup">Sign up</a>
+                Don't have an account? <a href="signup">Sign up</a>
             </div>
         </div>
     </div>
-
-    <script>
-        const loginButton = document.getElementById('loginButton');
-        const inputs = document.querySelectorAll('.form-control');
-
-        function checkLoginFields() {
-            let allFieldsFilled = true;
-            inputs.forEach(input => {
-                console.log(`${input.id}: ${input.value}`); // Log each input's value
-                if (!input.value.trim()) { // Use .trim() to ignore leading/trailing spaces
-                    allFieldsFilled = false;
-                }
-            });
-            console.log(`All fields filled: ${allFieldsFilled}`); // Log the result
-            loginButton.disabled = !allFieldsFilled;
-        }
-
-        inputs.forEach(input => {
-            input.addEventListener('input', checkLoginFields);
-        });
-
-        // Initial check to ensure the button is correctly disabled/enabled on load
-        checkLoginFields();
-
-    </script>
 </body>
 </html>
 
 @code {
+    private string Email;
+    private string Password;
+    private string ErrorMessage;
+    private string SuccessMessage;
 
+    private async Task handleLogin()
+    {
+        // Check if the fields are empty
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            ErrorMessage = "Email is required.";
+            StateHasChanged();
+            await Task.Delay(3000);
+            ErrorMessage = null;
+            StateHasChanged();
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(Password))
+        {
+            ErrorMessage = "Password is required.";
+            StateHasChanged();
+            await Task.Delay(3000);
+            ErrorMessage = null;
+            StateHasChanged();
+            return;
+        }
+
+        // Validate user credentials
+        Users? user = await Service.GetUserByEmailAsync(Email);
+
+        if (user == null)
+        {
+            ErrorMessage = "Sorry, no user found!";
+            StateHasChanged();
+            await Task.Delay(3000);
+            ErrorMessage = null;
+            StateHasChanged();
+            return;
+        }
+
+        if (Password != user.Password)
+        {
+            ErrorMessage = "Invalid email or password!";
+            StateHasChanged();
+            await Task.Delay(3000);
+            ErrorMessage = null;
+            StateHasChanged();
+            return;
+        }
+
+        // Successful login: Start the session
+        SessionService.StartSession(user.Id);
+        SuccessMessage = "Login successful!";
+        StateHasChanged();
+
+        // Navigate to the Expenses page
+        await Task.Delay(1000);
+        NavigationManager.NavigateTo("/Expenses");
+    }
 }

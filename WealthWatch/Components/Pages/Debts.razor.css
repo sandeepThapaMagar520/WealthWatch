@@ -1,0 +1,174 @@
+﻿.debt-body {
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: white;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background-color: #e5e7eb;
+}
+
+.balance {
+    font-size: 0.875rem;
+}
+
+.main-content {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.debts-container {
+    text-align: center; /* Center the debts table */
+}
+
+.debts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.debt-filter-div {
+    justify-content: space-around;
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+}
+
+.date-filter {
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background-color: white;
+}
+
+.div-add-debt-btn {
+    box-sizing: border-box;
+}
+
+.add-debt-btn {
+    background-color: #1a1a1a;
+    padding: .5rem 2rem;
+    color: white;
+    padding: .5rem;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+}
+
+.debts-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+    .debts-table th {
+        text-align: left; /* Aligns column headers to the left */
+        padding: 1rem;
+        background-color: #f8f9fa;
+        font-weight: 500;
+        color: #666;
+    }
+
+    .debts-table td {
+        padding: 1rem;
+        border-top: 1px solid #e5e7eb;
+        text-align: left; /* Aligns table content to the left */
+    }
+
+.tag {
+    background-color: #f3f4f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+}
+
+.pay-btn {
+    background-color: #fee2e2;
+    color: #ef4444;
+    padding: 0.25rem 0.75rem;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+
+    .status.completed {
+        background-color: #dcfce7;
+        color: #16a34a;
+    }
+
+    .status.incomplete {
+        background-color: #fee2e2;
+        color: #ef4444;
+    }
+
+.add-debt-form {
+    margin-top: 3rem;
+}
+
+.form-title {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+    }
+
+.submit-btn {
+    background-color: #000;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-weight: 500;
+}

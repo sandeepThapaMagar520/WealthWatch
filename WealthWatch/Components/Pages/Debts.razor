@@ -1,0 +1,195 @@
+﻿@page "/debt"
+@using WealthWatch.Models
+@using WealthWatch.Services
+@inject TransactionService transactionService
+@inject SessionService session
+@inject UserService userService
+
+<div class="debt-body">
+    <header class="header">
+        <div class="user-info">
+            <div class="user-avatar"></div>
+            <span>@currentUser</span>
+        </div>
+        <div class="balance">
+            Total Debit: <strong>@TotalDebtAmount</strong>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="debts-container">
+            <div class="debts-header">
+                <h1>Debts</h1>
+            </div>
+            <div class="debt-filter-div">
+                <div class="date-filter">
+                    <label for="start-date">Start Date</label>
+                    <input type="date" id="start-date" name="start-date" @bind=FromDate />
+
+                    <label for="end-date">End Date</label>
+                    <input type="date" id="end-date" name="end-date" @bind=ToDate />
+                </div>
+                <div class="div-add-debt-btn">
+                    <button class="add-debt-btn">Add Debt</button>
+                </div>
+            </div>
+
+            <table class="debts-table">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Debt Date</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Action</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var transaction in FilteredTransactions)
+                    {
+                        <tr>
+                            <td>@transaction.Source</td>
+                            <td><span class="date">@transaction.Date</span></td>
+                            <td>@transaction.Amount </td>
+                            <td>@transaction.DueDate?.ToString("MMMM dd, yyyy")</td>
+                            <td><button class="pay-btn">Pay</button></td>
+                            <td>
+                                <span class="status @(transaction.Status == "Completed" ? "completed" : "incomplete")">
+                                    @transaction.Status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <form class="add-debt-form">
+            <h2 class="form-title">Add Debt</h2>
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+            }
+            @if (!string.IsNullOrEmpty(SuccessMessage))
+            {
+                <div class="alert alert-success" role="alert">@SuccessMessage</div>
+            }
+            <div class="form-group">
+                <label for="description">Source</label>
+                <input type="text" @bind=newtransactions.Source id="description" name="description" required />
+            </div>
+            <div class="form-group">
+                <label for="debtDate">Debt Date</label>
+                <input type="date" @bind=newtransactions.Date id="debtDate" name="debtDate" required />
+            </div>
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input type="number" @bind=newtransactions.Amount id="amount" name="amount" required />
+            </div>
+            <div class="form-group">
+                <label for="dueDate">Due Date</label>
+                <input type="date" @bind=newtransactions.DueDate id="dueDate" name="dueDate" required />
+            </div>
+            <input type="hidden" @bind=newtransactions.Type />
+            <button type="submit" class="submit-btn" @onclick="HandleSubmit">ADD DEBT</button>
+        </form>
+    </main>
+</div>
+
+@code {
+    private Guid userId;
+    private string currentUser;
+    private string SuccessMessage;
+    private string ErrorMessage;
+    private Transactions newtransactions = new Transactions();
+    private List<Transactions> listOfTransactions = new List<Transactions>();
+    private int TotalDebtAmount;
+
+    private DateTime? FromDate;
+    private DateTime? ToDate;
+
+    // Filter data based on the FromDate and ToDate
+    private IEnumerable<Transactions> FilteredTransactions => listOfTransactions
+    .Where(t =>
+        (!FromDate.HasValue || t.Date.Date >= FromDate.Value.Date) &&
+        (!ToDate.HasValue || t.Date.Date <= ToDate.Value.Date));
+
+    protected override async Task OnInitializedAsync()
+    {
+        newtransactions.Type = "debt";
+
+        var checkuserId = session.GetCurrentUserId();
+        if (checkuserId == null || checkuserId == Guid.Empty)
+        {
+            ErrorMessage = "Invalid user session. Please log in again.";
+            await DisplayMessageWithDelay();
+            return;
+        }
+
+        currentUser = await userService.GetNameByIdAsync(checkuserId.Value);
+        userId = checkuserId.Value;
+
+        TotalDebtAmount = await transactionService.GetAmountByTypeAsync(userId, "debt");
+
+        await LoadDebts();
+    }
+
+    private async Task LoadDebts()
+    {
+        listOfTransactions = await transactionService.GetTransactionsByTypeAsync(userId, "debt");
+    }
+
+    private async Task HandleSubmit()
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        // Validation for Source
+        if (string.IsNullOrWhiteSpace(newtransactions.Source))
+        {
+            ErrorMessage = "Source is required.";
+            await DisplayMessageWithDelay();
+            return;
+        }
+
+        // Validation for Debt Date
+        if (!newtransactions.DueDate.HasValue || newtransactions.DueDate.Value < (DateTime.Today))
+        {
+            ErrorMessage = "Invalid due date! ";
+            await DisplayMessageWithDelay();
+            return;
+        }
+
+        // Validation for Amount
+        if (string.IsNullOrWhiteSpace(newtransactions.Amount) || !decimal.TryParse(newtransactions.Amount, out decimal amount) || amount <= 0)
+        {
+            ErrorMessage = "Valid amount is required.";
+            await DisplayMessageWithDelay();
+            return;
+        }
+
+        bool result = await transactionService.CreateTransactionAsync(userId, newtransactions);
+
+        if (result)
+        {
+            SuccessMessage = "Transaction added successfully!";
+            await DisplayMessageWithDelay();
+        }
+        else
+        {
+            ErrorMessage = "Failed to add transaction!";
+        }
+
+        await DisplayMessageWithDelay();
+    }
+
+    private async Task DisplayMessageWithDelay()
+    {
+        StateHasChanged();
+        await Task.Delay(3000);
+        ErrorMessage = null;
+        SuccessMessage = null;
+        StateHasChanged();
+    }
+}

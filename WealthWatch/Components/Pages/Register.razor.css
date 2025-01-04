@@ -1,0 +1,100 @@
+/* General body and layout styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(39, 39, 42);
+}
+
+.card {
+    background-color: white;
+    width: 400px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    padding: 24px;
+}
+
+.card-title {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+/* Form container styles */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgb(39, 39, 42); /* Dark color for readability */
+}
+
+/* Input and select field styles */
+.input, .select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+    background-color: white;
+}
+
+    .input:focus, .select:focus {
+        border-color: rgb(39, 39, 42);
+    }
+
+/* Button styling */
+.button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, opacity 0.3s ease;
+}
+
+    .button:hover {
+        background-color: rgb(39, 39, 42);
+    }
+
+    /* Disabled button styles */
+    .button:disabled {
+        background-color: #ccc; /* Light gray to indicate disabled state */
+        color: #666; /* Lighter color for text */
+        cursor: not-allowed; /* Change cursor to show the button is disabled */
+        opacity: 0.6; /* Slightly reduced opacity to make it look disabled */
+    }
+
+        .button:disabled:hover {
+            background-color: #ccc; /* Prevent hover effect on disabled button */
+        }
+
+/* Link styles for sign-up link */
+/* Link styles for sign-up and login links */
+.signup-link {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #666; /* Match the link color with other text */
+    text-decoration:none;
+}
+
+    .signup-link a {
+        color: #666; /* Matching the link color with the body text */
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+            color: #27272a; /* Darker color for the hover effect */
+        }

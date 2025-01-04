@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using WealthWatch.Models;
@@ -14,34 +14,34 @@ namespace WealthWatch.Services
 
         public UserService()
         {
-            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WealthWatch");
+            // Set the file path to the desired directory
+            string appDataPath = Path.Combine("D:\\final year\\application development");
             _dataFilePath = Path.Combine(appDataPath, "users.json");
-            Console.WriteLine(_dataFilePath);
 
+            // Ensure the directory exists
             if (!Directory.Exists(appDataPath))
             {
                 Directory.CreateDirectory(appDataPath);
             }
         }
-        private void SaveUser(List<Users> user)
+
+        private async Task SaveUserAsync(List<Users> users)
         {
-            string json = JsonSerializer.Serialize(user);
-            File.WriteAllText(_dataFilePath, json);
+            string json = JsonSerializer.Serialize(users);
+            await File.WriteAllTextAsync(_dataFilePath, json);
         }
 
-        public List<Users> GetAllUsers()
+        public async Task<List<Users>> GetAllUsersAsync()
         {
             try
             {
                 if (!File.Exists(_dataFilePath))
                 {
-                    Console.WriteLine("json file not found!");
                     return new List<Users>();
                 }
 
-                string jsonUsers = File.ReadAllText(_dataFilePath);
-                var users = JsonSerializer.Deserialize<List<Users>>(jsonUsers) ?? new List<Users>();
-                return users;
+                string jsonUsers = await File.ReadAllTextAsync(_dataFilePath);
+                return JsonSerializer.Deserialize<List<Users>>(jsonUsers) ?? new List<Users>();
             }
             catch (JsonException ex)
             {
@@ -55,48 +55,36 @@ namespace WealthWatch.Services
             }
         }
 
-        public Users? GetUserById(Guid id)
+        public async Task<Users?> GetUserByIdAsync(Guid id)
         {
-            return GetAllUsers().FirstOrDefault(x => x.Id == id);
+            var users = await GetAllUsersAsync();
+            return users.FirstOrDefault(x => x.Id == id);
+        }
+        public async Task<string> GetNameByIdAsync(Guid id)
+        {
+            var users = await GetAllUsersAsync();
+            Users foundUser =users.FirstOrDefault(x => x.Id == id);
+            return foundUser.FullName;
         }
 
-        public Users? GetUserByEmail(String Email)
+        public async Task<Users?> GetUserByEmailAsync(string email)
         {
-            var users = GetAllUsers();
-            if(users == null)
-            {
-                Console.WriteLine("no users on the file!");
-            }
-            var user = users.FirstOrDefault(x=> x.Email.Equals(Email, StringComparison.OrdinalIgnoreCase));
-            if (user == null)
-            {
-                Console.WriteLine("no user found!");
-            }
-            return user;
+            var users = await GetAllUsersAsync();
+            return users.FirstOrDefault(x => x.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
         }
 
-        public bool CreateUser(Users user)
+        public async Task<int> CreateUserAsync(Users user)
         {
-            var users = GetAllUsers();
+            var users = await GetAllUsersAsync();
 
-            if (users == null)
+            if (users.Any(u => u.Email == user.Email))
             {
-                users.Add(user);
-                SaveUser(users);
-                return true;
+                return 2; // User already exists
+            }
 
-            }
-            else if (users.Any(u => u.Email == user.Email))
-            {
-                Console.WriteLine("user already exists");
-                return false;
-            }
-            else
-            {
-                users.Add(user);
-                SaveUser(users);
-                return true;
-            }
+            users.Add(user);
+            await SaveUserAsync(users);
+            return 1;
         }
     }
 }

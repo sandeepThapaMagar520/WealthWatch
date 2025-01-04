@@ -1,0 +1,158 @@
+﻿@page "/label"
+@using WealthWatch.Models
+@using WealthWatch.Services
+@inject TagService TagService
+@inject SessionService session
+@inject UserService userService
+
+<div class="user-profile">
+    <div class="user-avatar"></div>
+    <span class="user-name">@currentUser </span>
+</div>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+}
+@if (!string.IsNullOrEmpty(SuccessMessage))
+{
+    <div class="alert alert-success" role="alert">@SuccessMessage</div>
+}
+
+<table class="label-table">
+    <thead>
+        <tr>
+            <th class="sn-cell">SN</th>
+            <th>Tag Name</th>
+            <th class="action-cell">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (TagsList != null && TagsList.Any())
+        {
+            @foreach (var (tag, index) in TagsList.Select((value, i) => (value, i + 1)))
+            {
+                <tr>
+                    <td class="sn-cell">@index</td>
+                    <td>@tag.TagName</td>
+                    <td class="action-cell">
+                        <div class="action-buttons">
+                            <button class="btn-delete" aria-label="Delete label" @onclick="() => DeleteTag(tag.TagId)">
+                                delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="3" style="text-align:center;">No tags available</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<section class="add-label-section">
+    <h2>Add New Label</h2>
+    <form class="label-form" @onsubmit="HandleAddTag">
+        <div class="form-group">
+            <label for="labelName">Tag Name</label>
+            <input type="text" @bind="TagName" id="labelName" name="labelName" required>
+        </div>
+        <button type="submit" class="btn-add">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Tag
+        </button>
+    </form>
+</section>
+
+
+@code {
+    private string currentUser;
+    private List<Tags> TagsList = new List<Tags>();
+    private string TagName;
+    private string ErrorMessage;
+    private string SuccessMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = session.GetCurrentUserId();
+        if (userId == null || userId == Guid.Empty)
+        {
+            ErrorMessage = "Invalid user session. Please log in again.";
+            StateHasChanged();
+            return;
+        }
+
+        currentUser = await userService.GetNameByIdAsync(userId.Value);
+        await LoadTags();
+    }
+
+    private async Task LoadTags()
+    {
+        TagsList = await TagService.GetAllTagsAsync();
+    }
+
+    private async Task HandleAddTag()
+    {
+        
+        if (!string.IsNullOrWhiteSpace(TagName))
+        {
+            var newTag = new Tags { TagName = TagName };
+            var result = await TagService.CreateTagAsync(newTag);
+
+            if (result == 1)
+            {
+                await LoadTags();
+                SuccessMessage = "Tag added successfully!";
+                StateHasChanged(); // Ensure UI updates immediately
+                await Task.Delay(2000); // Wait for 2 seconds
+                SuccessMessage = null;
+                StateHasChanged(); // Ensure UI updates after delay
+                TagName = string.Empty;
+            }
+            else if (result == 2)
+            {
+                ErrorMessage = "Tag already exists!";
+                StateHasChanged(); // Ensure UI updates immediately
+                await Task.Delay(2000); // Wait for 2 seconds
+                ErrorMessage = null;
+                StateHasChanged(); // Ensure UI updates after delay
+            }
+        }
+        else
+        {
+            ErrorMessage = "Tag name cannot be empty!";
+            StateHasChanged(); // Ensure UI updates immediately
+            await Task.Delay(2000); // Wait for 2 seconds
+            ErrorMessage = null;
+            StateHasChanged(); // Ensure UI updates after delay
+        }
+    }
+
+    private async Task DeleteTag(Guid tagId)
+    {
+        var success = await TagService.DeleteTagAsync(tagId);
+        if (success)
+        {
+            await LoadTags();
+            SuccessMessage = "Tag deleted successfully!";
+            StateHasChanged(); // Ensure UI updates immediately
+            await Task.Delay(2000); // Wait for 2 seconds
+            SuccessMessage = null;
+            StateHasChanged(); // Ensure UI updates after delay
+        }
+        else
+        {
+            ErrorMessage = "Failed to delete tag!";
+            StateHasChanged(); // Ensure UI updates immediately
+            await Task.Delay(2000); // Wait for 2 seconds
+            ErrorMessage = null;
+            StateHasChanged(); // Ensure UI updates after delay
+        }
+    }
+}
