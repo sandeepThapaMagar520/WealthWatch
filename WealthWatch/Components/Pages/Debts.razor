@@ -84,7 +84,7 @@
         }
         <form class="add-debt-form">
             <h2 class="form-title">Add Debt</h2>
-            
+
             <div class="form-group">
                 <label for="description">Source</label>
                 <input type="text" @bind=newtransactions.Source id="description" name="description" required />
@@ -193,7 +193,6 @@
         {
             ErrorMessage = "Failed to add transaction!";
         }
-
         await DisplayMessageWithDelay();
     }
 
