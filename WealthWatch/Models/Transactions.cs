@@ -17,6 +17,8 @@ namespace WealthWatch.Models
 
 
         public string Amount { get; set; } = string.Empty;
+        public int Pay { get; set; } = 0;
+
         public string Note { get; set; } = string.Empty;
 
         public DateTime Date { get; set; } = DateTime.Today;

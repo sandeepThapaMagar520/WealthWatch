@@ -53,7 +53,17 @@
                             <td><span class="date">@transaction.Date</span></td>
                             <td>@transaction.Amount </td>
                             <td>@transaction.DueDate?.ToString("MMMM dd, yyyy")</td>
-                            <td><button class="pay-btn">Pay</button></td>
+                            <td>
+                                @if (transaction.Pay != 0)
+                                {
+                                    <button style="color: red;" @onclick="() => ClearDebt(transaction.TransactionId)">Pay</button>
+                                }
+                                else
+                                {
+                                    <button style="color: green;">Payed</button>
+                                }
+                            </td>
+
                             <td>
                                 <span class="status @(transaction.Status == "Completed" ? "completed" : "incomplete")">
                                     @transaction.Status
@@ -64,17 +74,17 @@
                 </tbody>
             </table>
         </div>
-
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+        }
+        @if (!string.IsNullOrEmpty(SuccessMessage))
+        {
+            <div class="alert alert-success" role="alert">@SuccessMessage</div>
+        }
         <form class="add-debt-form">
             <h2 class="form-title">Add Debt</h2>
-            @if (!string.IsNullOrEmpty(ErrorMessage))
-            {
-                <div class="alert alert-danger" role="alert">@ErrorMessage</div>
-            }
-            @if (!string.IsNullOrEmpty(SuccessMessage))
-            {
-                <div class="alert alert-success" role="alert">@SuccessMessage</div>
-            }
+            
             <div class="form-group">
                 <label for="description">Source</label>
                 <input type="text" @bind=newtransactions.Source id="description" name="description" required />
@@ -119,6 +129,7 @@
     protected override async Task OnInitializedAsync()
     {
         newtransactions.Type = "debt";
+        newtransactions.Pay = 5;
 
         var checkuserId = session.GetCurrentUserId();
         if (checkuserId == null || checkuserId == Guid.Empty)
@@ -170,6 +181,7 @@
             return;
         }
 
+
         bool result = await transactionService.CreateTransactionAsync(userId, newtransactions);
 
         if (result)
@@ -192,5 +204,46 @@
         ErrorMessage = null;
         SuccessMessage = null;
         StateHasChanged();
+    }
+
+    private async Task ClearDebt(Guid id)
+    {
+        int TotalIncome = await transactionService.GetAmountByTypeAsync(userId, "income");
+        int TotalExpense = await transactionService.GetAmountByTypeAsync(userId, "expense");
+        int Balance = TotalIncome - TotalExpense;
+
+        //transaction by id 
+
+        var transaction = listOfTransactions.FirstOrDefault(t => t.TransactionId == id);
+
+        if (transaction == null)
+        {
+            ErrorMessage = "Transaction not found ";
+            await DisplayMessageWithDelay();
+            return;
+        }
+
+        if (Balance < int.Parse(transaction.Amount))
+        {
+            ErrorMessage = "Insufficient balance to pay the debt.";
+            await DisplayMessageWithDelay();
+            return;
+        }
+        transaction.Pay = 0;
+        transaction.Status = "Completed";
+        bool result = await transactionService.UpdateTransactionAsync(transaction);
+
+        if (result)
+        {
+            SuccessMessage = "Debt paid successfully!";
+            await LoadDebts(); 
+        }
+        else
+        {
+            ErrorMessage = "Failed to update the transaction.";
+        }
+
+        await DisplayMessageWithDelay();
+
     }
 }

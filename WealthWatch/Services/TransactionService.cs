@@ -76,10 +76,10 @@ namespace WealthWatch.Services
             // Get all transactions of the specified type
             var transactionsByType = await GetTransactionsByTypeAsync(userId, type);
 
-            // Calculate the total amount by summing all amounts (assumed to be strings in the database)
-            int totalAmount = transactionsByType.Sum(t =>
-                int.TryParse(t.Amount, out var amount) ? amount : 0
-            );
+            // Calculate the total amount by summing all valid integer amounts
+            int totalAmount = transactionsByType
+                .Sum(t => int.TryParse(t.Amount, out var amount) ? amount : 0);
+
 
             return totalAmount;
         }
@@ -129,5 +129,45 @@ namespace WealthWatch.Services
         {
             return await GetAllTransactionsAsync();
         }
+        public async Task<bool> UpdateTransactionAsync(Transactions transaction)
+        {
+            try
+            {
+                if (transaction == null)
+                    throw new ArgumentNullException(nameof(transaction), "Transaction cannot be null.");
+
+                // Retrieve all existing transactions
+                var allTransactions = await GetAllTransactionsAsync();
+
+                // Find the transaction to update
+                var existingTransaction = allTransactions.FirstOrDefault(t => t.TransactionId == transaction.TransactionId);
+
+                if (existingTransaction == null)
+                {
+                    Console.WriteLine($"Transaction with ID {transaction.TransactionId} not found.");
+                    return false; // Transaction not found
+                }
+
+                // Update the properties of the existing transaction
+                existingTransaction.Source = transaction.Source;
+                existingTransaction.Date = transaction.Date;
+                existingTransaction.Amount = transaction.Amount;
+                existingTransaction.DueDate = transaction.DueDate;
+                existingTransaction.Status = transaction.Status;
+                existingTransaction.Type = transaction.Type;
+
+                // Save the updated transactions back to the file
+                await SaveTransactionsAsync(existingTransaction.UserId, allTransactions);
+
+                return true; // Update successful
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating transaction: {ex.Message}");
+                return false; // Update failed
+            }
+        }
+
+
     }
 }
