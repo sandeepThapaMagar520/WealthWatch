@@ -15,7 +15,7 @@ namespace WealthWatch.Services
         public UserService()
         {
             // Set the file path to the desired directory
-            string appDataPath = Path.Combine("D:\\final year\\application development");
+            string appDataPath = Path.Combine("C:\\sandeep");
             _dataFilePath = Path.Combine(appDataPath, "users.json");
 
             // Ensure the directory exists

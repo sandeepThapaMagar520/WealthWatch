@@ -54,13 +54,15 @@
                             <td>@transaction.Amount </td>
                             <td>@transaction.DueDate?.ToString("MMMM dd, yyyy")</td>
                             <td>
-                                @if (transaction.Pay != 0)
+                                @if (transaction.Pay !=0)
                                 {
-                                    <button style="color: red;" @onclick="() => ClearDebt(transaction.TransactionId)">Pay</button>
+                                    <p style="color: green;">@transaction.Pay</p>
+                                    
                                 }
                                 else
                                 {
-                                    <button style="color: green;">Payed</button>
+                                    <button style="color: red;" @onclick="() => ClearDebt(transaction.TransactionId)">Pay</button>
+
                                 }
                             </td>
 
@@ -129,7 +131,7 @@
     protected override async Task OnInitializedAsync()
     {
         newtransactions.Type = "debt";
-        newtransactions.Pay = 5;
+        newtransactions.Pay = 0;
 
         var checkuserId = session.GetCurrentUserId();
         if (checkuserId == null || checkuserId == Guid.Empty)
@@ -228,7 +230,8 @@
             await DisplayMessageWithDelay();
             return;
         }
-        transaction.Pay = 0;
+        transaction.Pay = int.Parse(transaction.Amount);
+        transaction.Amount = "0";
         transaction.Status = "Completed";
         bool result = await transactionService.UpdateTransactionAsync(transaction);
 

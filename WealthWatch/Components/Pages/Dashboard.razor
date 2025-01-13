@@ -1,8 +1,56 @@
 ﻿@page "/dashboard"
+@using WealthWatch.Services
+@inject TransactionService transactionService
+@inject SessionService session
+@inject UserService userService
 
+
+<header class="header">
+    <div class="user-info">
+        <div class="user-avatar"></div>
+        <span>@currentUser</span>
+    </div>
+    <div class="balance">
+        Total Expense: <strong>@Balance</strong>
+    </div>
+    <div class="balance">
+        Total Expense: <strong></strong>
+    </div>
+</header>
 
 <h3>Dashboard</h3>
 
-@code {
+@code{
+    private int Balance;
+    private Guid userId;
+    private String currentUser;
+    private String ErrorMessage;
+    private String SuccessMessage;
+    protected override async Task OnInitializedAsync()
+    {
+        var checkuserId = session.GetCurrentUserId();
+        if (checkuserId == null || checkuserId == Guid.Empty)
+        {
+            ErrorMessage = "Invalid user session. Please log in again.";
+            await DisplayMessageWithDelay();
+            return;
+        }
 
+        currentUser = await userService.GetNameByIdAsync(checkuserId.Value);
+        userId = checkuserId.Value;
+        Balance = await transactionService.CheckBalance(userId);
+    }
+
+
+    private async Task DisplayMessageWithDelay()
+    {
+        StateHasChanged();
+        await Task.Delay(3000);
+        ErrorMessage = null;
+        SuccessMessage = null;
+        StateHasChanged();
+        return;
+    }
 }
+
+

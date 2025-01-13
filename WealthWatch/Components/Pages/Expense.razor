@@ -13,7 +13,10 @@
             <span>@currentUser</span>
         </div>
         <div class="balance">
-            Total Expense: <strong>@TotalExpenseAmount</strong>
+            Total Expense: <strong>@Balance</strong>
+        </div>
+        <div class="balance">
+            Total Expense: <strong>@TotalExpense</strong>
         </div>
     </header>
 
@@ -109,7 +112,10 @@
     private string ErrorMessage;
     private Transactions newtransactions = new Transactions();
     private List<Transactions> listOfTransactions = new List<Transactions>();
-    private int TotalExpenseAmount;
+    private int TotalExpense;
+    private int Balance;
+    private int TotalIncome;
+    private int TotalDebt;
     private int ExpenseAmount;
     //for displaying tags
     private List<Tags> allTags = new List<Tags>();
@@ -138,7 +144,10 @@
         currentUser = await userService.GetNameByIdAsync(checkuserId.Value);
         userId = checkuserId.Value;
 
-        TotalExpenseAmount = await transactionService.GetAmountByTypeAsync(userId, "expense");
+        TotalExpense = await transactionService.GetAmountByTypeAsync(userId, "expense");
+        TotalIncome = await transactionService.GetAmountByTypeAsync(userId, "income");
+        TotalDebt = await transactionService.GetAmountByTypeAsync(userId, "debt");
+
 
         //load tags
         allTags = await tag.GetAllTagsAsync();
@@ -178,8 +187,8 @@
             return;
         }
 
-        ExpenseAmount = TotalExpenseAmount + int.Parse(newtransactions.Amount);
-        bool v = await CheckSufficientBalanace(ExpenseAmount);
+        ExpenseAmount = TotalExpense + int.Parse(newtransactions.Amount);
+        bool v = await transactionService.CheckSufficientBalanace(int.Parse(newtransactions.Amount), userId);
         bool BalanceCheck = v;
         if (!BalanceCheck)
         {
@@ -212,19 +221,5 @@
         StateHasChanged();
         return;
     }
-
-    private async Task<bool> CheckSufficientBalanace(int ExpenseAmount)
-    {
-        int IncomeAmount = await  transactionService.GetAmountByTypeAsync(userId, "income");
-        int DebtAmount = await  transactionService.GetAmountByTypeAsync(userId, "debt");
-
-        if((IncomeAmount+DebtAmount) > ExpenseAmount)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
+    
 }

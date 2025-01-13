@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
 using WealthWatch.Models;
+using Windows.System;
 
 namespace WealthWatch.Services
 {
@@ -11,7 +12,8 @@ namespace WealthWatch.Services
         public TransactionService()
         {
             // Set the file path to the desired directory for transactions
-            string appDataPath = Path.Combine("D:\\final year\\application development");
+            string appDataPath = Path.Combine("C:\\sandeep");
+            
             _dataFilePath = Path.Combine(appDataPath, "transactions.json");
 
             // Ensure the directory exists
@@ -21,7 +23,7 @@ namespace WealthWatch.Services
             }
         }
 
-        private async Task SaveTransactionsAsync(Guid userId, List<Transactions> userTransactions)
+        public async Task SaveTransactionsAsync(Guid userId, List<Transactions> userTransactions)
         {
             try
             {
@@ -165,6 +167,29 @@ namespace WealthWatch.Services
             {
                 Console.WriteLine($"Error updating transaction: {ex.Message}");
                 return false; // Update failed
+            }
+        }
+
+        public async Task<int> CheckBalance(Guid userId)
+        {
+            int IncomeAmount = await GetAmountByTypeAsync(userId, "income");
+            int DebtAmount = await GetAmountByTypeAsync(userId, "debt");
+            int ExpenseAmount = await GetAmountByTypeAsync(userId, "expense");
+
+            int Balance = (IncomeAmount + DebtAmount) - ExpenseAmount;
+            return Balance;
+        }
+
+        public async Task<bool> CheckSufficientBalanace(int ExpenseAmount, Guid userId)
+        {
+            int Balance = await CheckBalance(userId);
+            if (Balance > ExpenseAmount)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
