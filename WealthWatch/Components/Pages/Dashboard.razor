@@ -1,9 +1,9 @@
 ﻿@page "/dashboard"
 @using WealthWatch.Services
+@using WealthWatch.Models
 @inject TransactionService transactionService
 @inject SessionService session
 @inject UserService userService
-
 
 <header class="header">
     <div class="user-info">
@@ -11,21 +11,160 @@
         <span>@currentUser</span>
     </div>
     <div class="balance">
-        Total Expense: <strong>@Balance</strong>
-    </div>
-    <div class="balance">
-        Total Expense: <strong></strong>
+        Available Balance: <strong>@Balance</strong>
     </div>
 </header>
 
-<h3>Dashboard</h3>
+<div class="financial-summary">
+    <div class="summary-card summary-inflow">
+        <div class="summary-label">Cash Inflows</div>
+        <div class="summary-value">@TotalInFlow</div>
+    </div>
+    <div class="summary-card summary-outflow">
+        <div class="summary-label">Cash Outflow</div>
+        <div class="summary-value">@TotalOutFlow</div>
+    </div>
+    <div class="summary-card summary-clear-debts">
+        <div class="summary-label">Clear Debts</div>
+        <div class="summary-value">@ClearedDebt</div>
+    </div>
+    <div class="summary-card summary-remaining-debts">
+        <div class="summary-label">Remaining Debts</div>
+        <div class="summary-value">@RemainingDebt</div>
+    </div>
+</div>
 
-@code{
+<section class="cash-flow-chart">
+    <h2 class="section-title">Monthly Cash Inflow and Outflow</h2>
+    <div class="chart-placeholder"></div>
+</section>
+
+<section class="data-table-section">
+    <div class="table-controls">
+        <h2 class="section-title">Transaction</h2>
+        <div class="filter-controls">
+            <label for="from-date">From</label>
+            <input type="date" id="from-date" class="date-filter" @bind="FromDate">
+
+            <label for="to-date">To</label>
+            <input type="date" id="to-date" class="date-filter" @bind="ToDate">
+
+            <input type="search" class="search-input" placeholder="Search">
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Tags</th>
+                <th>Amount</th>
+                <th>Due Date</th>
+                <th>Action</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transaction in FilteredTransactions)
+            {
+                <tr>
+                    <td>@transaction.Description</td>
+                    <td><span class="date">@transaction.Date</span></td>
+                    <td>@transaction.Amount </td>
+                    <td>@transaction.Tag</td>
+                    <td>@transaction.Note</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="data-table-section">
+    <div class="table-controls">
+        <h2 class="section-title">Pending Debts</h2>
+        <div class="filter-controls">
+            <label for="from-date">From</label>
+            <input type="date" id="from-date" class="date-filter" @bind="FromDate">
+
+            <label for="to-date">To</label>
+            <input type="date" id="to-date" class="date-filter" @bind="ToDate">
+
+            <input type="search" class="search-input" placeholder="Search">
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Tags</th>
+                <th>Amount</th>
+                <th>Due Date</th>
+                <th>Action</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transaction in FilteredDebts)
+            {
+                <tr>
+                    <td>@transaction.Source</td>
+                    <td><span class="date">@transaction.Date</span></td>
+                    <td>@transaction.Amount</td>
+                    <td>@transaction.DueDate?.ToString("d MMM yyyy")</td>
+
+                    <td>
+                        @if (transaction.Status == "Completed")
+                        {
+                            <p style="color: green;">@transaction.Pay</p>
+                        }
+                        else
+                        {
+                            <button style="color: red;" @onclick="() => ClearDebt(transaction.TransactionId)">Pay</button>
+                        }
+                    </td>
+
+                    <td>
+                        <span class="status @(transaction.Status == "Completed" ? "completed" : "incomplete")">
+                            @transaction.Status
+                        </span>
+                    </td>
+                </tr>
+
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
     private int Balance;
     private Guid userId;
-    private String currentUser;
-    private String ErrorMessage;
-    private String SuccessMessage;
+    private string currentUser;
+    private string ErrorMessage;
+    private string SuccessMessage;
+    private int TotalInFlow;
+    private int TotalOutFlow;
+    private int ClearedDebt;
+    private int RemainingDebt;
+
+    private DateTime? FromDate { get; set; }
+    private DateTime? ToDate { get; set; }
+
+    private List<Transactions> AllTransactions = new List<Transactions>();
+    private List<Transactions> AllDebts = new List<Transactions>();
+
+    // Filtered transactions based on the selected date range
+    private IEnumerable<Transactions> FilteredTransactions => AllTransactions
+        .Where(t =>
+            (!FromDate.HasValue || t.DueDate >= FromDate) &&
+            (!ToDate.HasValue || t.DueDate <= ToDate)
+        );
+
+    // Filtered debts based on the selected date range
+    private IEnumerable<Transactions> FilteredDebts => AllDebts
+        .Where(t =>
+            (!FromDate.HasValue || t.DueDate >= FromDate) &&
+            (!ToDate.HasValue || t.DueDate <= ToDate)
+        );
+
     protected override async Task OnInitializedAsync()
     {
         var checkuserId = session.GetCurrentUserId();
@@ -39,8 +178,17 @@
         currentUser = await userService.GetNameByIdAsync(checkuserId.Value);
         userId = checkuserId.Value;
         Balance = await transactionService.CheckBalance(userId);
-    }
 
+        // Load all transactions
+        AllTransactions = await transactionService.GetTransactionsByUserIdAsync(userId);
+        TotalInFlow = AllTransactions.Where(t => t.Type == "income").Sum(t => int.Parse(t.Amount));
+        TotalOutFlow = AllTransactions.Where(t => t.Type == "expense").Sum(t => int.Parse(t.Amount));
+
+        // Load all debts
+        AllDebts = await transactionService.GetTransactionsByUserIdAsync(userId);
+        ClearedDebt = AllDebts.Where(t => t.Status == "Complete").Sum(t => int.Parse(t.Amount));
+        RemainingDebt = AllDebts.Where(t => t.Status != "Complete").Sum(t => int.Parse(t.Amount));
+    }
 
     private async Task DisplayMessageWithDelay()
     {
@@ -49,8 +197,5 @@
         ErrorMessage = null;
         SuccessMessage = null;
         StateHasChanged();
-        return;
     }
 }
-
-

@@ -1,6 +1,6 @@
 ﻿@page "/debt"
 @using WealthWatch.Models
-@using WealthWatch.Services
+@using WealthWatch.Services 
 @inject TransactionService transactionService
 @inject SessionService session
 @inject UserService userService
@@ -41,7 +41,7 @@
                         <th>Debt Date</th>
                         <th>Amount</th>
                         <th>Due Date</th>
-                        <th>Action</th>
+                        <th>Paid</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -51,18 +51,17 @@
                         <tr>
                             <td>@transaction.Source</td>
                             <td><span class="date">@transaction.Date</span></td>
-                            <td>@transaction.Amount </td>
-                            <td>@transaction.DueDate?.ToString("MMMM dd, yyyy")</td>
+                            <td>@transaction.Amount</td>
+                            <td>@transaction.DueDate?.ToString("d MMM yyyy")</td>
+
                             <td>
-                                @if (transaction.Pay !=0)
+                                @if (transaction.Status == "Completed")
                                 {
                                     <p style="color: green;">@transaction.Pay</p>
-                                    
                                 }
                                 else
                                 {
                                     <button style="color: red;" @onclick="() => ClearDebt(transaction.TransactionId)">Pay</button>
-
                                 }
                             </td>
 
@@ -72,6 +71,7 @@
                                 </span>
                             </td>
                         </tr>
+
                     }
                 </tbody>
             </table>
@@ -213,8 +213,7 @@
         int TotalExpense = await transactionService.GetAmountByTypeAsync(userId, "expense");
         int Balance = TotalIncome - TotalExpense;
 
-        //transaction by id 
-
+        // Find the transaction by ID
         var transaction = listOfTransactions.FirstOrDefault(t => t.TransactionId == id);
 
         if (transaction == null)
@@ -230,15 +229,40 @@
             await DisplayMessageWithDelay();
             return;
         }
+
+        // Mark the current transaction as paid
         transaction.Pay = int.Parse(transaction.Amount);
         transaction.Amount = "0";
         transaction.Status = "Completed";
+
+        // Update the current transaction
         bool result = await transactionService.UpdateTransactionAsync(transaction);
 
         if (result)
         {
-            SuccessMessage = "Debt paid successfully!";
-            await LoadDebts(); 
+            // adding new transaction 
+            var clearedDebtTransaction = new Transactions
+                {
+                    
+                    UserId = userId,
+                    Type = "expense",
+                    Description = "Cleared debt",
+                    Amount = transaction.Pay.ToString(),  // Cleared debt amount
+                    Tag = "Cleared Debt"
+                    
+                };
+
+            bool newTransactionResult = await transactionService.CreateTransactionAsync(userId, clearedDebtTransaction);
+
+            if (newTransactionResult)
+            {
+                SuccessMessage = "Debt paid successfully!";
+                await LoadDebts();
+            }
+            else
+            {
+                ErrorMessage = "Failed to add the cleared debt transaction.";
+            }
         }
         else
         {
@@ -246,6 +270,6 @@
         }
 
         await DisplayMessageWithDelay();
-
     }
+
 }

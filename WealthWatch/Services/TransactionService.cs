@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
 using WealthWatch.Models;
-using Windows.System;
 
 namespace WealthWatch.Services
 {
@@ -157,6 +156,8 @@ namespace WealthWatch.Services
                 existingTransaction.DueDate = transaction.DueDate;
                 existingTransaction.Status = transaction.Status;
                 existingTransaction.Type = transaction.Type;
+                existingTransaction.Pay = transaction.Pay;
+
 
                 // Save the updated transactions back to the file
                 await SaveTransactionsAsync(existingTransaction.UserId, allTransactions);
