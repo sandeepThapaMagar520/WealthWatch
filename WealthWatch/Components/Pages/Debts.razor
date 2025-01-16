@@ -182,7 +182,7 @@
             await DisplayMessageWithDelay();
             return;
         }
-
+        newtransactions.Status = "Incomplete";
 
         bool result = await transactionService.CreateTransactionAsync(userId, newtransactions);
 
@@ -232,7 +232,8 @@
 
         // Mark the current transaction as paid
         transaction.Pay = int.Parse(transaction.Amount);
-        transaction.Amount = "0";
+        
+        
         transaction.Status = "Completed";
 
         // Update the current transaction

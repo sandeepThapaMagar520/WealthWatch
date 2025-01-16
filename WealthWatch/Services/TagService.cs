@@ -1,10 +1,14 @@
-﻿
-using System.Text.Json;
+﻿using System.Text.Json;
 using WealthWatch.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace WealthWatch.Services
 {
-    public class TagService
+    public class TagService : ITagService
     {
         private readonly string _dataFilePath;
 
@@ -51,6 +55,7 @@ namespace WealthWatch.Services
                 return new List<Tags>();
             }
         }
+
         public async Task<bool> CheckTag(string tagName)
         {
             // Fetch all tags asynchronously
@@ -59,8 +64,6 @@ namespace WealthWatch.Services
             // Check if any tag matches the provided tag name (case-insensitive)
             return tags.Any(t => t.TagName.Equals(tagName, StringComparison.OrdinalIgnoreCase));
         }
-
-
 
         public async Task<int> CreateTagAsync(Tags tag)
         {
@@ -81,7 +84,6 @@ namespace WealthWatch.Services
 
             return 1; // Tag created successfully
         }
-
 
         public async Task<bool> DeleteTagAsync(Guid id)
         {

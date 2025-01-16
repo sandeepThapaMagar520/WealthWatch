@@ -5,6 +5,38 @@
 @inject SessionService session
 @inject UserService userService
 
+<!-- Date Range Filter Above the Header -->
+<section class="date-filter-section">
+    <label for="from-date">From</label>
+    <input type="date" id="from-date" class="date-filter" @bind="FromDate" />
+
+    <label for="to-date">To</label>
+    <input type="date" id="to-date" class="date-filter" @bind="ToDate" />
+</section>
+
+<!-- Tag Filter Section -->
+<section class="tag-filter-section">
+    <label for="tag-filter">Filter by Tag</label>
+    <select id="tag-filter" class="tag-filter" @bind="SelectedTag">
+        <option value="">All Tags</option>
+        @foreach (var tag in AllTags)
+        {
+            <option value="@tag">@tag</option>
+        }
+    </select>
+</section>
+
+<!-- Type Filter Section -->
+<section class="type-filter-section">
+    <label for="type-filter">Filter by Type</label>
+    <select id="type-filter" class="type-filter" @bind="SelectedType">
+        <option value="">All Types</option>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+        <option value="debt">Debt</option>
+    </select>
+</section>
+
 <header class="header">
     <div class="user-info">
         <div class="user-avatar"></div>
@@ -23,6 +55,10 @@
     <div class="summary-card summary-outflow">
         <div class="summary-label">Cash Outflow</div>
         <div class="summary-value">@TotalOutFlow</div>
+    </div>
+    <div class="summary-card summary-outflow">
+        <div class="summary-label">Total debts</div>
+        <div class="summary-value">@TotalDebts</div>
     </div>
     <div class="summary-card summary-clear-debts">
         <div class="summary-label">Clear Debts</div>
@@ -43,12 +79,6 @@
     <div class="table-controls">
         <h2 class="section-title">Transaction</h2>
         <div class="filter-controls">
-            <label for="from-date">From</label>
-            <input type="date" id="from-date" class="date-filter" @bind="FromDate">
-
-            <label for="to-date">To</label>
-            <input type="date" id="to-date" class="date-filter" @bind="ToDate">
-
             <input type="search" class="search-input" placeholder="Search">
         </div>
     </div>
@@ -56,11 +86,11 @@
         <thead>
             <tr>
                 <th>Description</th>
-                <th>Tags</th>
+                <th>Type</th>
+                <th>Tag</th>
+                <th>Date</th>
                 <th>Amount</th>
-                <th>Due Date</th>
-                <th>Action</th>
-                <th>Status</th>
+                <th>Note</th>
             </tr>
         </thead>
         <tbody>
@@ -68,9 +98,10 @@
             {
                 <tr>
                     <td>@transaction.Description</td>
-                    <td><span class="date">@transaction.Date</span></td>
-                    <td>@transaction.Amount </td>
+                    <td>@transaction.Type</td>
                     <td>@transaction.Tag</td>
+                    <td>@transaction.Date.ToString("d MMM yyyy")</td>
+                    <td>@transaction.Amount</td>
                     <td>@transaction.Note</td>
                 </tr>
             }
@@ -82,12 +113,6 @@
     <div class="table-controls">
         <h2 class="section-title">Pending Debts</h2>
         <div class="filter-controls">
-            <label for="from-date">From</label>
-            <input type="date" id="from-date" class="date-filter" @bind="FromDate">
-
-            <label for="to-date">To</label>
-            <input type="date" id="to-date" class="date-filter" @bind="ToDate">
-
             <input type="search" class="search-input" placeholder="Search">
         </div>
     </div>
@@ -95,7 +120,6 @@
         <thead>
             <tr>
                 <th>Description</th>
-                <th>Tags</th>
                 <th>Amount</th>
                 <th>Due Date</th>
                 <th>Action</th>
@@ -107,10 +131,8 @@
             {
                 <tr>
                     <td>@transaction.Source</td>
-                    <td><span class="date">@transaction.Date</span></td>
                     <td>@transaction.Amount</td>
                     <td>@transaction.DueDate?.ToString("d MMM yyyy")</td>
-
                     <td>
                         @if (transaction.Status == "Completed")
                         {
@@ -118,17 +140,13 @@
                         }
                         else
                         {
-                            <button style="color: red;" @onclick="() => ClearDebt(transaction.TransactionId)">Pay</button>
+                            <a style="color: red;">@transaction.Pay</a>
                         }
                     </td>
-
                     <td>
-                        <span class="status @(transaction.Status == "Completed" ? "completed" : "incomplete")">
-                            @transaction.Status
-                        </span>
+                        <span class="status @(transaction.Status == "Completed" ? "completed" : "incomplete")">@transaction.Status</span>
                     </td>
                 </tr>
-
             }
         </tbody>
     </table>
@@ -144,25 +162,35 @@
     private int TotalOutFlow;
     private int ClearedDebt;
     private int RemainingDebt;
+    private int TotalDebts;
 
     private DateTime? FromDate { get; set; }
     private DateTime? ToDate { get; set; }
 
+    private string SelectedTag { get; set; }
+    private string SelectedType { get; set; } // Added type filter for income, expense, debt
+    private List<string> AllTags = new List<string>(); // List to store all tags
+
     private List<Transactions> AllTransactions = new List<Transactions>();
     private List<Transactions> AllDebts = new List<Transactions>();
 
-    // Filtered transactions based on the selected date range
+    // Filtered transactions based on the selected date range, type, and tag
     private IEnumerable<Transactions> FilteredTransactions => AllTransactions
         .Where(t =>
             (!FromDate.HasValue || t.DueDate >= FromDate) &&
-            (!ToDate.HasValue || t.DueDate <= ToDate)
+            (!ToDate.HasValue || t.DueDate <= ToDate) &&
+            (string.IsNullOrEmpty(SelectedTag) || t.Tag == SelectedTag) &&
+            (string.IsNullOrEmpty(SelectedType) || t.Type == SelectedType) // Added type filtering here
         );
 
-    // Filtered debts based on the selected date range
+    // Filtered debts based on the selected date range, status, type, and tag
     private IEnumerable<Transactions> FilteredDebts => AllDebts
         .Where(t =>
+            t.Status == "Incomplete" && // Filter for incomplete debts
+            (string.IsNullOrEmpty(SelectedType) || t.Type == SelectedType) && // Filter by type
             (!FromDate.HasValue || t.DueDate >= FromDate) &&
-            (!ToDate.HasValue || t.DueDate <= ToDate)
+            (!ToDate.HasValue || t.DueDate <= ToDate) &&
+            (string.IsNullOrEmpty(SelectedTag) || t.Tag == SelectedTag)
         );
 
     protected override async Task OnInitializedAsync()
@@ -185,9 +213,13 @@
         TotalOutFlow = AllTransactions.Where(t => t.Type == "expense").Sum(t => int.Parse(t.Amount));
 
         // Load all debts
-        AllDebts = await transactionService.GetTransactionsByUserIdAsync(userId);
-        ClearedDebt = AllDebts.Where(t => t.Status == "Complete").Sum(t => int.Parse(t.Amount));
-        RemainingDebt = AllDebts.Where(t => t.Status != "Complete").Sum(t => int.Parse(t.Amount));
+        AllDebts = await transactionService.GetTransactionsByTypeAsync(userId, "debt");
+        TotalDebts = AllDebts.Sum(t => int.Parse(t.Amount));
+        ClearedDebt = AllDebts.Where(t => t.Status == "Completed").Sum(t => int.Parse(t.Amount));
+        RemainingDebt = AllDebts.Where(t => t.Status == "Incomplete").Sum(t => int.Parse(t.Amount));
+
+        // Get all unique tags for the dropdown
+        AllTags = AllTransactions.Select(t => t.Tag).Distinct().ToList();
     }
 
     private async Task DisplayMessageWithDelay()

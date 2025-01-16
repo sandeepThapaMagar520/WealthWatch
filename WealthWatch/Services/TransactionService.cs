@@ -1,10 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using WealthWatch.Models;
 
 namespace WealthWatch.Services
 {
-    public class TransactionService
+    public class TransactionService : ITransactionService
     {
         private readonly string _dataFilePath;
 
@@ -12,7 +16,7 @@ namespace WealthWatch.Services
         {
             // Set the file path to the desired directory for transactions
             string appDataPath = Path.Combine("C:\\sandeep");
-            
+
             _dataFilePath = Path.Combine(appDataPath, "transactions.json");
 
             // Ensure the directory exists
@@ -61,6 +65,7 @@ namespace WealthWatch.Services
                 return new List<Transactions>();
             }
         }
+
         public async Task<List<Transactions>> GetTransactionsByTypeAsync(Guid userId, string type)
         {
             // Get all transactions for the user
@@ -80,7 +85,6 @@ namespace WealthWatch.Services
             // Calculate the total amount by summing all valid integer amounts
             int totalAmount = transactionsByType
                 .Sum(t => int.TryParse(t.Amount, out var amount) ? amount : 0);
-
 
             return totalAmount;
         }
@@ -109,8 +113,6 @@ namespace WealthWatch.Services
             }
         }
 
-
-
         public async Task<bool> CreateTransactionAsync(Guid userId, Transactions transaction)
         {
             var transactions = await GetAllTransactionsAsync();
@@ -124,12 +126,6 @@ namespace WealthWatch.Services
             return true;
         }
 
-
-       
-        public async Task<List<Transactions>> GetAllUserTransactionsAsync()
-        {
-            return await GetAllTransactionsAsync();
-        }
         public async Task<bool> UpdateTransactionAsync(Transactions transaction)
         {
             try
@@ -158,7 +154,6 @@ namespace WealthWatch.Services
                 existingTransaction.Type = transaction.Type;
                 existingTransaction.Pay = transaction.Pay;
 
-
                 // Save the updated transactions back to the file
                 await SaveTransactionsAsync(existingTransaction.UserId, allTransactions);
 
@@ -184,16 +179,9 @@ namespace WealthWatch.Services
         public async Task<bool> CheckSufficientBalanace(int ExpenseAmount, Guid userId)
         {
             int Balance = await CheckBalance(userId);
-            if (Balance > ExpenseAmount)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return Balance > ExpenseAmount;
         }
 
-
+    
     }
 }

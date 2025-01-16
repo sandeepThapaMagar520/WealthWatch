@@ -16,7 +16,7 @@ namespace WealthWatch.Models
         public string Description { get; set; } = string.Empty;
 
 
-        public string Amount { get; set; } = string.Empty;
+        public string Amount { get; set; } = "0";
         public int Pay { get; set; } = 0;
 
         public string Note { get; set; } = string.Empty;

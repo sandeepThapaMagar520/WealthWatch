@@ -8,7 +8,7 @@ using WealthWatch.Models;
 
 namespace WealthWatch.Services
 {
-    public class UserService
+    public class UserService : IUserService
     {
         private readonly string _dataFilePath;
 
@@ -60,11 +60,12 @@ namespace WealthWatch.Services
             var users = await GetAllUsersAsync();
             return users.FirstOrDefault(x => x.Id == id);
         }
+
         public async Task<string> GetNameByIdAsync(Guid id)
         {
             var users = await GetAllUsersAsync();
-            Users foundUser =users.FirstOrDefault(x => x.Id == id);
-            return foundUser.FullName;
+            Users? foundUser = users.FirstOrDefault(x => x.Id == id);
+            return foundUser?.FullName ?? string.Empty;
         }
 
         public async Task<Users?> GetUserByEmailAsync(string email)
@@ -84,7 +85,7 @@ namespace WealthWatch.Services
 
             users.Add(user);
             await SaveUserAsync(users);
-            return 1;
+            return 1; // User created successfully
         }
     }
 }

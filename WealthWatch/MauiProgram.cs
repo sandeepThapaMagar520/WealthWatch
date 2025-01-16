@@ -16,10 +16,12 @@ namespace WealthWatch
                 });
 
             builder.Services.AddMauiBlazorWebView();
-            builder.Services.AddSingleton<UserService>();
+            builder.Services.AddSingleton<IUserService, UserService>();
             builder.Services.AddSingleton<TagService>();
-            builder.Services.AddSingleton<TransactionService>();
+            builder.Services.AddSingleton<ITransactionService, ITransactionService>();
             builder.Services.AddSingleton<SessionService>();
+            builder.Services.AddScoped<ITagService, TagService>();
+
 
 
             builder.Services.AddTransient<MainPage>();
